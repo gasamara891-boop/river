@@ -1,0 +1,209 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+  
+}
+
+section{
+  @apply bg-darkmode;
+}
+
+.blog-details p, .blog-details hr {
+  @apply mb-8 ;
+}
+
+.blog-details hr {
+  @apply border-dark_border;
+}
+
+.blog-details strong {
+  @apply font-bold dark:text-white;
+}
+
+.blog-details ul {
+  @apply mb-8 list-inside list-disc space-y-3;
+}
+
+.blog-details ol {
+  @apply mb-8 list-inside list-decimal space-y-3;
+}
+
+.blog-details h1 {
+  @apply mb-8 text-3xl font-bold text-midnight_text dark:text-white sm:text-4xl md:text-[40px] md:leading-[1.28];
+}
+
+.blog-details h2 {
+  @apply mb-8 text-2xl font-bold text-midnight_text dark:text-white sm:text-3xl md:text-[35px] md:leading-[1.28];
+}
+
+.blog-details h3 {
+  @apply mb-6 text-2xl font-bold dark:text-white sm:text-[28px] sm:leading-[40px];
+}
+
+
+/* file: ./globals.css (or your existing global CSS file) */
+/* Prevent horizontal page scroll while we fix specific components */
+html, body {
+  overflow-x: hidden; /* quick safety net */
+}
+
+/* Ensure images (and next/image) never force overflow */
+img, picture, video, .next-image, .next-img, .next-image-wrapper {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Clip wide slider tracks and ensure the visible slider pane clips contents */
+.slick-slider,
+.slick-list {
+  overflow: hidden; /* ensures slider contents cannot extend page width */
+}
+
+/* Reduce chance gradient/background elements overflow the viewport */
+.bg-gradient-to-br,
+.bg-gradient-to-bl,
+.bg-gradient-to-tl,
+.bg-gradient-to-tr {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Defensive rule for the specific decorative elements you logged (keeps them inside viewport) */
+.absolute.w-50.h-50,
+.absolute[style*="-top"],
+.absolute[style*="-left"],
+.absolute[style*="-right"],
+.absolute[style*="-bottom"] {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+
+
+
+
+
+
+
+
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes text-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes orb1 {
+  0%,100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 70px) scale(1.1); }
+}
+@keyframes orb2 {
+  0%,100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, -50px) scale(1.05); }
+}
+@keyframes orb-float {
+  0%,100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+@keyframes grid-flow {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 60px 60px, 60px 60px; }
+}
+@keyframes bg-shift {
+  0% { background-position: 0 0; }
+  100% { background-position: 1000px 1000px; }
+}
+@keyframes pulse-glow {
+  0%,100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.animate-border-flow {
+  background-size: 200% 200%;
+  animation: border-flow 6s linear infinite;
+}
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-shimmer 4s linear infinite;
+}
+.animate-orb1 {
+  animation: orb1 15s ease-in-out infinite;
+}
+.animate-orb2 {
+  animation: orb2 18s ease-in-out infinite;
+}
+.animate-bg-shift {
+  animation: bg-shift 60s linear infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+
+@keyframes orb-float {
+  0%,100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+@keyframes bg-shift {
+  0% { background-position: 0 0; }
+  100% { background-position: 1000px 1000px; }
+}
+@keyframes pulse-glow {
+  0%,100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes text-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes orb1 {
+  0%,100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 70px) scale(1.1); }
+}
+@keyframes orb2 {
+  0%,100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, -50px) scale(1.05); }
+}
+
+.animate-border-flow { background-size: 200% 200%; animation: border-flow 6s linear infinite; }
+.animate-text-shimmer { background-size: 200% auto; animation: text-shimmer 4s linear infinite; }
+.animate-orb1 { animation: orb1 15s ease-in-out infinite; }
+.animate-orb2 { animation: orb2 18s ease-in-out infinite; }
+.animate-bg-shift { animation: bg-shift 60s linear infinite; }
+.animate-pulse-glow { animation: pulse-glow 4s ease-in-out infinite; }
+
+
+
+
+
+
+
+/* Custom Scrollbar for Dashboard sections */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+
+option{
+  color: black;
+  background-color: white;
+  font-weight: 600;
+}

@@ -1,0 +1,2 @@
+const getImagePrefix = () => "";
+export { getImagePrefix };
