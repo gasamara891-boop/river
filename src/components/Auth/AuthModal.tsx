@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { logUserActivity } from "@/lib/userActivity";
-import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, X } from "lucide-react"; // ADDED 'X' ICON
 
 type View = "login" | "signup" | "confirm";
 type FieldErrorType = {
@@ -242,6 +242,16 @@ if (signUpError) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-[#25252b] bg-opacity-85 backdrop-blur-sm" onClick={close} aria-hidden />
       <div className={`container ${view === "signup" ? "active" : ""}`}>
+        {/* CLOSE BUTTON */}
+        <button
+          className="auth-close-btn"
+          title="Close"
+          type="button"
+          aria-label="Close"
+          onClick={close}
+        >
+          <X size={31} />
+        </button>
         <div className="curved-shape"></div>
         <div className="curved-shape2"></div>
         {/* LOGIN FORM */}
@@ -415,6 +425,17 @@ if (signUpError) {
 {view === "confirm" && (
   <div className="custom-success-overlay">
     <div className="custom-success-card">
+      {/* CLOSE BUTTON FOR CONFIRM OVERLAY */}
+      <button
+        className="auth-close-btn"
+        title="Close"
+        type="button"
+        aria-label="Close"
+        onClick={close}
+        style={{ position: "absolute", top: 14, right: 13 }}
+      >
+        <X size={27} />
+      </button>
       <h2>🎉 Success!</h2>
       <div className="success-msg">
         Hello{confirmSentTo?.name ? `, ${confirmSentTo.name}` : ""} — we've sent a confirmation link to <b>{confirmSentTo?.email}</b>.<br />
@@ -455,14 +476,6 @@ if (signUpError) {
   </div>
 )}
 
-
-
-
-
-
-
-
-
         <style jsx>{`
           /* your previous container/modal styles */
           @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -476,6 +489,22 @@ if (signUpError) {
             overflow: hidden;
             background: none;
             font-family: 'Poppins', sans-serif;
+          }
+          .auth-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 22px;
+            z-index: 201;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+            outline: none;
+          }
+          .auth-close-btn:hover, .auth-close-btn:focus {
+            color: #fff;
           }
           .container .form-box {
             position: absolute;
@@ -598,14 +627,9 @@ if (signUpError) {
           .container.active .form-box.Register .animation { transform: translateX(0%); opacity: 1; filter: blur(0px); transition-delay: calc(.1s * var(--li)); }
           .info-content.Register .animation { transform: translateX(-120%); transition: .7s ease; opacity: 0; filter: blur(10PX); transition-delay: calc(.1s * var(--S)); }
           .container.active .info-content.Register .animation { transform: translateX(0%); opacity: 1; filter: blur(0); transition-delay: calc(.1s * var(--li)); }
-          
           .custom-success-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: rgba(37,37,43,0.92); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 100; transition: opacity 0.5s; }
-          .custom-success-card { padding: 30px 36px 22px 36px; background: #18181c; border-radius: 12px; box-shadow: 0 8px 28px 0 #e46033ad; text-align: center; color: #fff; border: 2px solid #e46033; min-width: 260px; }
-         
-          
+          .custom-success-card { padding: 30px 36px 22px 36px; background: #18181c; border-radius: 12px; box-shadow: 0 8px 28px 0 #e46033ad; text-align: center; color: #fff; border: 2px solid #e46033; min-width: 260px; position: relative; }
           .custom-success-card h2 { margin-bottom: 0.2em; font-size: 2em; letter-spacing: 0.01em; color: #e46033; font-weight: 700; animation: pop 0.5s cubic-bezier(.45,1.6,.8,1) both; }
-         
-         
           @keyframes pop { 0% { transform: scale(0.7); opacity: 0;} 100% { transform: scale(1); opacity: 1;} }
           .success-bar { width: 100%; margin: 18px 0 4px 0; background: #393939; height: 8px; border-radius: 4px; overflow: hidden; }
           .success-bar-inner { height: 100%; background: linear-gradient(90deg,#e46033 40%,#ffa07a 100%); width: 100%; transition: width 1s linear; }

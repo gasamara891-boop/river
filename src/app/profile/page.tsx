@@ -385,7 +385,7 @@ export default function ProfilePage() {
         {/* Dashboard Title */}
         <h2 className="text-2xl sm:text-3xl font-bold mb-2">Investment Dashboard</h2>
         <p className="text-midnight_text mb-6 sm:mb-8 text-sm sm:text-base">
-          River is The richest part of Earth | Take Profit!
+          Your Deposits | Your Withdrawals | Your Vault
         </p>
 
         {/* Stat Cards - only Total Invested and Total Profit per request */}
