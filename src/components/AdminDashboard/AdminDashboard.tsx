@@ -325,6 +325,69 @@ const approveWithdrawal = async (withdrawalId: string): Promise<void> => {
     showToast && showToast("error", "Failed to approve withdrawal.");
   }
 };
+
+// Approve investment implementation (used by the Approve button in the investments table)
+const approveInvestment = async (investmentId: string): Promise<void> => {
+  try {
+    console.log("approveInvestment called with id:", investmentId);
+    if (!investmentId) {
+      showToast && showToast("error", "No investment id provided.");
+      return;
+    }
+
+    // Optional: fetch the investment row first for validation/logging
+    const { data: invRow, error: invFetchErr } = await supabase
+      .from("investments")
+      .select("*")
+      .eq("id", investmentId)
+      .maybeSingle();
+
+    if (invFetchErr) {
+      console.error("Failed to fetch investment before approve:", invFetchErr);
+      showToast && showToast("error", "Failed to fetch investment.");
+      return;
+    }
+
+    if (!invRow) {
+      showToast && showToast("error", "Investment not found.");
+      return;
+    }
+
+    // If already approved, do nothing
+    if (String(invRow.status).toLowerCase() === "success") {
+      showToast && showToast("info", "Investment already approved.");
+      return;
+    }
+
+    // Update status -> success
+    const { error: updateErr } = await supabase
+      .from("investments")
+      .update({ status: "success" })
+      .eq("id", investmentId);
+
+    if (updateErr) {
+      console.error("Supabase update error:", updateErr);
+      showToast && showToast("error", "Failed to approve investment.");
+      return;
+    }
+
+    // Refresh local state
+    try {
+      const { data } = await supabase.from("investments").select("*").eq("id", investmentId).maybeSingle();
+      if (data) {
+        setInvestments((prev) => prev.map((i) => (i.id === investmentId ? data : i)));
+      }
+    } catch (refreshErr) {
+      console.warn("Failed to refresh investments after approve:", refreshErr);
+    }
+
+    showToast && showToast("success", "Investment approved!");
+  } catch (err) {
+    console.error("approveInvestment err:", err);
+    showToast && showToast("error", "Failed to approve investment.");
+  }
+};
+
   async function handleDeleteUser(userId: string) {
     try {
       const { error } = await supabase.from("profiles").delete().eq("id", userId);
@@ -564,9 +627,6 @@ const approveWithdrawal = async (withdrawalId: string): Promise<void> => {
                       ? <tr><td colSpan={6} className="py-6 text-center text-neutral-400">No investments found.</td></tr>
                       : investments.map(inv => {
                         const invUser = getUserById(inv.user_id);
-                        function approveInvestment(id: any): void {
-                          throw new Error("Function not implemented.");
-                        }
 
                         return (
                           <tr key={inv.id} className="hover:bg-neutral-850">
