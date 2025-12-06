@@ -115,19 +115,24 @@ export default function ProfilePage() {
           console.error("manual_interest fetch error:", profileErr);
         }
 
+        // *** SUM AVAILABLE (amount - debited_amount) FOR SUCCESS INVESTMENTS ***
         const { data: investedData, error: investedErr } = await supabase
           .from("investments")
-          .select("amount, status")
+          .select("amount, debited_amount, status")
           .eq("user_id", user.id)
           .eq("status", "success");
 
         if (investedErr) {
           console.error("investedErr", investedErr);
         } else if (mounted && investedData) {
-          const investedNumbers = investedData.map((r: any) => Number(r.amount) || 0);
+          const investedNumbers = investedData.map((r: any) => {
+            const amt = Number(r.amount) || 0;
+            const debited = Number(r.debited_amount || 0);
+            const available = Math.max(0, amt - debited);
+            return available;
+          });
           const investedSum = investedNumbers.reduce((s: number, v: number) => s + v, 0);
 
-          // set total invested (confirmed/success only)
           setTotalInvested(investedSum);
 
           // --- USE manual_interest override if present ---
@@ -225,19 +230,22 @@ export default function ProfilePage() {
       // ignore - fallback to other strategies
     }
 
-    // fallback: compute from approved/successful investments only
+    // fallback: compute from approved/successful investments only, subtracting debited_amount
     try {
       const { data } = await supabase
         .from("investments")
-        .select("coin, amount, status")
+        .select("coin, amount, debited_amount, status")
         .eq("user_id", user.id)
         .eq("status", "success");
       const b: Record<string, number> = { btc: 0, eth: 0, usdt: 0 };
       if (Array.isArray(data)) {
         data.forEach((r: any) => {
           const coin = String(r.coin || "").toLowerCase();
+          const amt = Number(r.amount || 0);
+          const debited = Number(r.debited_amount || 0);
+          const available = Math.max(0, amt - debited);
           if (b[coin] === undefined) b[coin] = 0;
-          b[coin] += Number(r.amount) || 0;
+          b[coin] += available;
         });
       }
       setBalances(b);
@@ -323,7 +331,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={async () => {
-                // Refresh profits button: recompute using only approved/successful investments
+                // Refresh profits button: recompute using only approved/non-debited investments
                 setLoadingStats(true);
                 try {
                   const { data: profileRow } = await supabase
@@ -334,12 +342,16 @@ export default function ProfilePage() {
 
                   const { data: investedData } = await supabase
                     .from("investments")
-                    .select("amount, status")
+                    .select("amount, debited_amount, status")
                     .eq("user_id", user.id)
                     .eq("status", "success");
 
                   const investedNumbers = (investedData || []).map(
-                    (r: any) => Number(r.amount) || 0
+                    (r: any) => {
+                      const amt = Number(r.amount) || 0;
+                      const debited = Number(r.debited_amount || 0);
+                      return Math.max(0, amt - debited);
+                    }
                   );
                   const investedSum = investedNumbers.reduce((s: number, v: number) => s + v, 0);
                   setTotalInvested(investedSum);
@@ -432,7 +444,7 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {PLANS.map((plan) => {
-              const userHasEnough = (totalInvested ?? 0) >= plan.minDeposit; // use totalInvested
+              const userHasEnough = (totalInvested ?? 0) >= plan.minDeposit;
               const disabled = !userHasEnough;
               return (
                 <div
@@ -521,7 +533,7 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Recent Deposits & Withdrawals (split) */}
+        {/* Recent Deposits & Withdrawals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
           {/* Deposits */}
           <div className="bg-darkmode border border-midnight_text rounded-lg p-4 sm:p-6">

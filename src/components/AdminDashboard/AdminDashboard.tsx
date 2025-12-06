@@ -4,6 +4,19 @@ import React, { useCallback, useEffect, useMemo, useState, FormEvent } from "rea
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
+// Add this type declaration here (above your component)
+type Investment = {
+  id: string;
+  user_id: string;
+  coin: string;
+  amount: number;
+  status: string;
+  debited?: boolean;
+  debited_amount?: number;
+  created_at: string;
+  // add other fields you need (e.g. plan_id, wallet_address) if you reference them
+};
+
 const TABLE_FETCH_LIMIT = 1000;
 
 // Start of original file (now with manual interest feature)
@@ -206,35 +219,112 @@ export default function AdminDashboard({ showToast }: { showToast?: (type: strin
       showToast && showToast("error", "Failed to update addresses.");
     }
   }
-
-  async function approveInvestment(investmentId: string) {
-    try {
-      const { error } = await supabase.from("investments").update({ status: "success" }).eq("id", investmentId);
-      if (!error) {
-        showToast && showToast("success", "Investment approved!");
-        const { data } = await supabase.from("investments").select("*").eq("id", investmentId).maybeSingle();
-        if (data) setInvestments((prev) => prev.map((i) => (i.id === investmentId ? data : i)));
-      } else showToast && showToast("error", "Failed to approve investment.");
-    } catch (err) {
-      console.error("approveInvestment err:", err);
-      showToast && showToast("error", "Failed to approve investment.");
+// Replace the existing approveWithdrawal function inside your AdminDashboard component with this:
+const approveWithdrawal = async (withdrawalId: string): Promise<void> => {
+  try {
+    // 1. Fetch withdrawal row and ensure it's pending
+    const { data: wdRow, error: wdErr } = await supabase
+      .from("withdrawals")
+      .select("*")
+      .eq("id", withdrawalId)
+      .maybeSingle();
+    if (wdErr || !wdRow) {
+      showToast && showToast("error", "Could not fetch withdrawal info!");
+      return;
     }
-  }
-
-  async function approveWithdrawal(withdrawalId: string) {
-    try {
-      const { error } = await supabase.from("withdrawals").update({ status: "success" }).eq("id", withdrawalId);
-      if (!error) {
-        showToast && showToast("success", "Withdrawal approved!");
-        const { data } = await supabase.from("withdrawals").select("*").eq("id", withdrawalId).maybeSingle();
-        if (data) setWithdrawals((prev) => prev.map((w) => (w.id === withdrawalId ? data : w)));
-      } else showToast && showToast("error", "Failed to approve withdrawal.");
-    } catch (err) {
-      console.error("approveWithdrawal err:", err);
-      showToast && showToast("error", "Failed to approve withdrawal.");
+    if (String(wdRow.status).toLowerCase() !== "pending") {
+      showToast && showToast("info", "Withdrawal is not pending or already processed.");
+      return;
     }
-  }
 
+    // 2. Fetch candidate investments (status success, same user & coin)
+    const { data: investmentsRaw, error: invFetchErr } = await supabase
+      .from("investments")
+      .select("*")
+      .eq("user_id", wdRow.user_id)
+      .eq("coin", wdRow.coin)
+      .eq("status", "success");
+
+    if (invFetchErr) {
+      showToast && showToast("error", "Could not fetch investments!");
+      return;
+    }
+
+    // Cast for TS & compute available amounts (use debited_amount column)
+    const investments: Investment[] = (investmentsRaw as Investment[] | null) || [];
+
+    // Filter only those that actually have available (amount - debited_amount > 0)
+    const eligible = investments
+      .map((inv) => ({
+        ...inv,
+        amount: Number(inv.amount || 0),
+        debited_amount: Number(inv.debited_amount || 0),
+      }))
+      .filter((inv) => inv.amount - (inv.debited_amount || 0) > 0);
+
+    // Sort oldest-first to debit oldest investments first
+    eligible.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    // 3. Ensure total available covers withdrawal
+    const totalAvailable = eligible.reduce((s, inv) => s + (inv.amount - (inv.debited_amount || 0)), 0);
+    const withdrawAmount = Number(wdRow.amount || 0);
+    if (totalAvailable + 0.000001 < withdrawAmount) {
+      showToast && showToast("error", "Not enough available balance to cover this withdrawal.");
+      return;
+    }
+
+    // 4. Debit sequentially until covered
+    let remaining = withdrawAmount;
+    for (const inv of eligible) {
+      if (remaining <= 0) break;
+      const available = inv.amount - (inv.debited_amount || 0);
+      if (available <= 0) continue;
+      const toDebit = Math.min(available, remaining);
+      const newDebitedAmount = (inv.debited_amount || 0) + toDebit;
+
+      const { error: updateErr } = await supabase
+        .from("investments")
+        .update({
+          debited_amount: newDebitedAmount,
+          ...(newDebitedAmount >= inv.amount ? { debited: true } : {}),
+        })
+        .eq("id", inv.id);
+
+      if (updateErr) {
+        showToast && showToast("error", `Failed to debit investment ${inv.id}: ${updateErr.message}`);
+        return; // abort — we do not proceed if an update fails
+      }
+
+      remaining -= toDebit;
+    }
+
+    // tiny float tolerance
+    if (remaining > 0.000001) {
+      showToast && showToast("error", "Failed to fully debit investments for this withdrawal.");
+      return;
+    }
+
+    // 5. Mark withdrawal as success
+    const { error: wdUpdateErr } = await supabase
+      .from("withdrawals")
+      .update({ status: "success" })
+      .eq("id", withdrawalId);
+
+    if (wdUpdateErr) {
+      showToast && showToast("error", "Failed to approve withdrawal: " + (wdUpdateErr.message || ""));
+      return;
+    }
+
+    // Refresh local state for withdrawals
+    const { data: refreshed } = await supabase.from("withdrawals").select("*").eq("id", withdrawalId).maybeSingle();
+    if (refreshed) setWithdrawals((prev) => prev.map((w) => (w.id === withdrawalId ? refreshed : w)));
+
+    showToast && showToast("success", "Withdrawal approved and investments debited!");
+  } catch (err) {
+    console.error("approveWithdrawal err:", err);
+    showToast && showToast("error", "Failed to approve withdrawal.");
+  }
+};
   async function handleDeleteUser(userId: string) {
     try {
       const { error } = await supabase.from("profiles").delete().eq("id", userId);
@@ -474,6 +564,10 @@ export default function AdminDashboard({ showToast }: { showToast?: (type: strin
                       ? <tr><td colSpan={6} className="py-6 text-center text-neutral-400">No investments found.</td></tr>
                       : investments.map(inv => {
                         const invUser = getUserById(inv.user_id);
+                        function approveInvestment(id: any): void {
+                          throw new Error("Function not implemented.");
+                        }
+
                         return (
                           <tr key={inv.id} className="hover:bg-neutral-850">
                             <td className="py-2 px-3 truncate max-w-[10rem]">{invUser?.name || invUser?.email || "Unknown"}</td>
